@@ -3,7 +3,7 @@ import csv
 
 
 number_of_dice = 5
-prob_cut_off = 5e-15
+prob_cut_off = 5e-20
 
 # each throw will have three possibilities
 # 1. possible points * proba * recursion with 5 dice
@@ -61,18 +61,22 @@ def calculate_points_combinations(n) -> list[bool,float,int]:
                 i += 1
 
 
-        next_is_5:bool = 0
+        next_amount_dice:int = 0
 
         if len(combination) == 0:
-            next_is_5 = 1
+            next_amount_dice = 5
+        else: next_amount_dice = len(combination)
+
+        if point_sum == 0:
+            next_amount_dice = 0
         
-        if (next_is_5, point_sum) not in possible_scores:
-            possible_scores.add((next_is_5, point_sum))
-            rv.append([next_is_5, 1, point_sum])
+        if (next_amount_dice, point_sum) not in possible_scores:
+            possible_scores.add((next_amount_dice, point_sum))
+            rv.append([next_amount_dice, 1, point_sum])
         else:
             i = 0
             for ls in rv:
-                if ls[2] == point_sum and ls[0] == next_is_5:
+                if ls[2] == point_sum and ls[0] == next_amount_dice:
                     rv[i][1] += 1
                 i += 1
 
@@ -144,17 +148,14 @@ def Exp_Value_n_memo(n, actual_points, point_combinations, prob_cut_off, current
         return Exp
 
     # Iterate through point combinations
-    for next_5, proba, points in point_combination:
-        # If next_5 is True, recurse with a higher n value
-        if next_5:
-            Exp += proba * (points + Exp_Value_n_memo(5, actual_points, point_combinations, prob_cut_off, current_prob * proba, memo))
+    for next_amount_dice, proba, points in point_combination:
+        # If next_amount_dice is True, recurse with a higher n value
+        if next_amount_dice > 0:
+            Exp += proba * (points + Exp_Value_n_memo(next_amount_dice, actual_points, point_combinations, prob_cut_off, current_prob * proba, memo))
         else:
             # If points is 0, subtract actual points weighted by probability
-            if points == 0:
-                Exp -= proba * actual_points
-            else:
-                # Otherwise, recurse with the same n (but adjust the probability)
-                Exp += proba * (points + Exp_Value_n_memo(n-1, actual_points, point_combinations, prob_cut_off, current_prob * proba, memo))
+            Exp -= proba * actual_points
+
 
     # Store the result in the memoization dictionary before returning
     memo[(n, current_prob)] = Exp
@@ -215,3 +216,8 @@ def make_ExpV_csv(n, prob_cut_off):
 make_csv(number_of_dice)
 make_ExpV_csv(number_of_dice, prob_cut_off)
 
+res = sorted(calculate_points_combinations(5), key= lambda x: x[2], reverse=1)
+
+
+# for s in res:
+#     print(s)
